@@ -92,7 +92,8 @@ The django settings must default to project.settings.deployed, like this
 
 # Example
 
-For a working example check out [django-everything-template][django-everything]
+For a working example check out [django-everything-template][django-everything] on github.
+
 
 [twitter]: https://twitter.com/mattjmorrison
-[dajngo-everything]: http://github.com/mattjmorrison/django-everything-template
+[django-everything]: http://github.com/mattjmorrison/django-everything-template
