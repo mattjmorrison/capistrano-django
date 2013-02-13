@@ -8,6 +8,7 @@ Capistrano::Configuration.instance.load do
   set :normalize_asset_timestamps, false
 
   after :deploy, 'deploy:cleanup'
+  after 'deploy:restart', 'django:restart'
   after 'deploy:update_code', 'nodejs:install_deps'
   after 'deploy:update_code', 'python:create_virtualenv'
   after 'python:create_virtualenv', 'python:install_deps'
@@ -67,11 +68,7 @@ Capistrano::Configuration.instance.load do
       run "ln -s #{current_release}/project/settings/#{django_env}.py #{current_release}/project/settings/deployed.py"
     end
 
-  end
-
-  namespace :deploy do
-
-    desc "Restart apache"
+    desc "Restart apache / celeryd / celerybeat"
     task :restart do
       run "sudo apache2ctl graceful"
       run "sudo service celeryd-django restart"
