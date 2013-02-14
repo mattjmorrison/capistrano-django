@@ -12,6 +12,7 @@
 * Django
 * South
 * django-compressor
+* celery
 
 **Node.js**
 
@@ -20,6 +21,7 @@
 **Other**
 
 * Apache
+* celeryd & celerybeat daemons
 
 # Configuring
 
@@ -88,6 +90,8 @@ The django settings must default to project.settings.deployed, like this
 		
 7. The settings file in "project/settings/#{django_env}" will be symlinked to "project/settings/deployed.py".
 8. Apache will be restarted gracefully
+9. celeryd will be restarted
+10. celerybeat will be restarted 
 
 
 # Example

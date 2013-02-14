@@ -70,8 +70,28 @@ Capistrano::Configuration.instance.load do
 
     desc "Restart apache / celeryd / celerybeat"
     task :restart do
+      restart_apache
+      restart_celery
+    end
+
+    desc "Restart Apache"
+    task :restart_apache do
       run "sudo apache2ctl graceful"
+    end
+
+    desc "Restart Celery"
+    task :restart_celery do
+      restart_celeryd
+      restart_celerybeat
+    end
+
+    desc "Restart Celeryd"
+    task :restart_celeryd do
       run "sudo service celeryd-django restart"
+    end
+
+    desc "Restart Celerybeat"
+    task :restart_celerybeat do
       run "sudo service celerybeat-django restart"
     end
 
