@@ -40,6 +40,7 @@ namespace :django do
     end
     invoke 'django:collectstatic'
     invoke 'django:symlink_settings'
+    invoke 'django:symlink_wsgi'
     invoke 'django:migrate'
   end
 
@@ -58,6 +59,13 @@ namespace :django do
     settings_path = "#{release_path}/#{fetch(:django_settings_dir)}"
     on roles(:all) do
       execute "ln -s #{settings_path}/#{fetch(:django_settings)}.py #{settings_path}/deployed.py"
+    end
+  end
+
+  desc "Symlink wsgi script to live.wsgi"
+  task :symlink_wsgi do
+    on roles(:web) do
+      execute "ln -sf #{release_path}/wsgi/main.wsgi #{release_path}/wsgi/live.wsgi"
     end
   end
 
