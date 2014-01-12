@@ -1,100 +1,103 @@
+after 'deploy:updating', 'python:create_virtualenv'
 
-unless Capistrano::Configuration.respond_to?(:instance)
-  abort "capistrano_django requires Capistrano 2"
-end
+namespace :deploy do
 
-Capistrano::Configuration.instance.load do
-
-  set :normalize_asset_timestamps, false
-
-  after :deploy, 'deploy:cleanup'
-  after 'deploy:restart', 'django:restart'
-  after 'deploy:update_code', 'nodejs:install_deps'
-  after 'deploy:update_code', 'python:create_virtualenv'
-  after 'python:create_virtualenv', 'python:install_deps'
-  after 'python:install_deps', 'django:compress'
-  after 'django:compress', 'django:collectstatic'
-  after 'django:collectstatic', 'django:symlink_settings'
-  before 'deploy:create_symlink', 'django:migrate'
-
-  namespace :nodejs do
-
-    desc "Install node.js dependencies"
-    task :install_deps do
-      run "cd #{current_release}/devops && npm install"
+  desc 'Restart application'
+  task :restart do
+    on roles(:web) do |h|
+      execute "sudo apache2ctl graceful"
     end
-
-  end
-
-  namespace :python do
-
-    desc "Create a python virtualenv"
-    task :create_virtualenv do
-      run "virtualenv #{current_release}/virtualenv"
-    end
-
-    desc "Install python requirements"
-    task :install_deps do
-      pip = "#{current_release}/virtualenv/bin/pip"
-      run "#{pip} install -r #{current_release}/devops/requirements/#{django_env}.txt"
-    end
-
-  end
-
-  namespace :django do
-
-    def django(args, flags="")
-      python = "#{current_release}/virtualenv/bin/python"
-      run "#{python} #{current_release}/manage.py #{django_env} #{args} #{flags}"
-    end
-
-    desc "Run django-compressor"
-    task :compress do
-      django("compress")
-    end
-
-    desc "Run django's collectstatic"
-    task :collectstatic do
-      django("collectstatic", "-i *.coffee -i *.less --noinput")
-    end
-
-    desc "Run django migrations"
-    task :migrate do
-      django("syncdb", "--noinput --migrate")
-    end
-
-    desc "Symlink django settings to deployed.py"
-    task :symlink_settings do
-      run "ln -s #{current_release}/project/settings/#{django_env}.py #{current_release}/project/settings/deployed.py"
-    end
-
-    desc "Restart apache / celeryd / celerybeat"
-    task :restart do
-      restart_apache
-      restart_celery
-    end
-
-    desc "Restart Apache"
-    task :restart_apache do
-      run "sudo apache2ctl graceful"
-    end
-
-    desc "Restart Celery"
-    task :restart_celery do
-      restart_celeryd
-      restart_celerybeat
-    end
-
-    desc "Restart Celeryd"
-    task :restart_celeryd do
-      run "sudo service celeryd-django restart"
-    end
-
-    desc "Restart Celerybeat"
-    task :restart_celerybeat do
-      run "sudo service celerybeat-django restart"
-    end
-
   end
 
 end
+
+namespace :python do
+
+  desc "Create a python virtualenv"
+  task :create_virtualenv do
+    on roles(:all) do |h|
+      execute "virtualenv #{release_path}/virtualenv"
+      execute "#{release_path}/virtualenv/bin/pip install -r #{release_path}/#{fetch(:pip_requirements)}"
+    end
+  end
+
+  after 'python:create_virtualenv', 'django:setup_environ'
+
+end
+
+namespace :django do
+
+  def django(args, flags="")
+    on roles(:all) do |h|
+      execute "#{release_path}/virtualenv/bin/python #{release_path}/manage.py #{fetch(:django_settings)} #{args} #{flags}"
+    end
+  end
+
+  desc "Setup Django environment"
+  task :setup_environ do
+    if fetch(:django_compressor)
+      invoke 'django:compress'
+    end
+    invoke 'django:collectstatic'
+    invoke 'django:symlink_settings'
+    invoke 'django:migrate'
+  end
+
+  desc "Run django-compressor"
+  task :compress do
+    django("compress")
+  end
+
+  desc "Run django's collectstatic"
+  task :collectstatic do
+    django("collectstatic", "-i *.coffee -i *.less --noinput")
+  end
+
+  desc "Symlink django settings to deployed.py"
+  task :symlink_settings do
+    settings_path = "#{release_path}/#{fetch(:django_settings_dir)}"
+    on roles(:all) do
+      execute "ln -s #{settings_path}/#{fetch(:django_settings)}.py #{settings_path}/deployed.py"
+    end
+  end
+
+  desc "Run django migrations"
+  task :migrate do
+    django("syncdb", "--noinput --migrate")
+  end
+
+end
+
+
+
+#   namespace :nodejs do
+
+#     desc "Install node.js dependencies"
+#     task :install_deps do
+#       if exists?(:node_dependencies)
+#         run "cd #{current_release}/devops && npm install"
+#       end
+#     end
+
+#   namespace :python do
+
+#     desc "Restart Apache"
+#     task :restart_apache do
+#       run "sudo apache2ctl graceful"
+#     end
+
+#     desc "Restart Celery"
+#     task :restart_celery do
+#       restart_celeryd
+#       restart_celerybeat
+#     end
+
+#     desc "Restart Celeryd"
+#     task :restart_celeryd do
+#       run "sudo service celeryd-django restart"
+#     end
+
+#     desc "Restart Celerybeat"
+#     task :restart_celerybeat do
+#       run "sudo service celerybeat-django restart"
+#     end

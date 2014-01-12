@@ -8,7 +8,7 @@ Gem::Specification.new do |s|
   s.description = %q{capistrano-django provides a solid basis for common django deployment}
 
   s.files    = Dir["lib/**/*.rb"]
-  s.add_dependency "capistrano", "~> 2.14.1"
+  s.add_dependency "capistrano", "~> 3.0.0"
 
   s.author   = "Matthew J. Morrison"
   s.email    = "mattjmorrison@mattjmorrison.com"
