@@ -19,9 +19,23 @@ namespace :python do
       execute "virtualenv #{release_path}/virtualenv"
       execute "#{release_path}/virtualenv/bin/pip install -r #{release_path}/#{fetch(:pip_requirements)}"
     end
+    if fetch(:flask)
+      invoke 'flask:setup'
+    else
+      invoke 'django:setup'
+    end
   end
 
-  after 'python:create_virtualenv', 'django:setup_environ'
+end
+
+namespace :flask do
+
+  task :setup do
+    on roles(:web) do |h|
+      execute "ln -s #{release_path}/settings/#{fetch(:settings_file)}.py #{release_path}/settings/deployed.py"
+      execute "ln -sf #{release_path}/wsgi/wsgi.py #{release_path}/wsgi/live.wsgi"
+    end
+  end
 
 end
 
@@ -35,7 +49,7 @@ namespace :django do
   end
 
   desc "Setup Django environment"
-  task :setup_environ do
+  task :setup do
     if fetch(:django_compressor)
       invoke 'django:compress'
     end
