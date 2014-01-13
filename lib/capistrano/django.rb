@@ -29,7 +29,7 @@ namespace :django do
 
   def django(args, flags="")
     on roles(:all) do |h|
-      manage_path = File.join(release_path, fetch(:django_project_dir), 'manage.py')
+      manage_path = File.join(release_path, fetch(:django_project_dir) || '', 'manage.py')
       execute "#{release_path}/virtualenv/bin/python #{manage_path} #{fetch(:django_settings)} #{args} #{flags}"
     end
   end
