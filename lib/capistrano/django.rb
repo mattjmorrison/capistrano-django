@@ -66,7 +66,8 @@ namespace :django do
   desc "Symlink wsgi script to live.wsgi"
   task :symlink_wsgi do
     on roles(:web) do
-      execute "ln -sf #{release_path}/wsgi/main.wsgi #{release_path}/wsgi/live.wsgi"
+      wsgi_path = File.join(release_path, fetch(:wsgi_path) || 'wsgi')
+      execute "ln -sf #{wsgi_path}/main.wsgi #{wsgi_path}/live.wsgi"
     end
   end
 
