@@ -16,8 +16,9 @@ namespace :python do
   desc "Create a python virtualenv"
   task :create_virtualenv do
     on roles(:all) do |h|
-      execute "virtualenv #{release_path}/virtualenv"
-      execute "#{release_path}/virtualenv/bin/pip install -r #{release_path}/#{fetch(:pip_requirements)}"
+      virtualenv_path = File.join(release_path, 'virtualenv')
+      execute "virtualenv #{virtualenv_path}"
+      execute "#{virtualenv_path}/bin/pip install -r #{release_path}/#{fetch(:pip_requirements)}"
     end
     if fetch(:flask)
       invoke 'flask:setup'
@@ -71,7 +72,7 @@ namespace :django do
 
   desc "Symlink django settings to deployed.py"
   task :symlink_settings do
-    settings_path = "#{release_path}/#{fetch(:django_settings_dir)}"
+    settings_path = File.join(release_path, fetch(:django_settings_dir))
     on roles(:all) do
       execute "ln -s #{settings_path}/#{fetch(:django_settings)}.py #{settings_path}/deployed.py"
     end
@@ -80,14 +81,18 @@ namespace :django do
   desc "Symlink wsgi script to live.wsgi"
   task :symlink_wsgi do
     on roles(:web) do
-      wsgi_path = File.join(release_path, fetch(:wsgi_path) || 'wsgi')
+      wsgi_path = File.join(release_path, fetch(:wsgi_path, 'wsgi'))
       execute "ln -sf #{wsgi_path}/main.wsgi #{wsgi_path}/live.wsgi"
     end
   end
 
   desc "Run django migrations"
   task :migrate do
-    django("syncdb", "--noinput --migrate")
+    if fetch(:multidb)
+      django("sync_all", '--noinput')
+    else
+      django("syncdb", "--noinput --migrate")
+    end
   end
 
 end
