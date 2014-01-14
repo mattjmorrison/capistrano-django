@@ -49,6 +49,8 @@ namespace :django do
     end
   end
 
+  after 'deploy:restart', 'django:restart_celery'
+
   desc "Setup Django environment"
   task :setup do
     if fetch(:django_compressor)
@@ -58,6 +60,28 @@ namespace :django do
     invoke 'django:symlink_settings'
     invoke 'django:symlink_wsgi'
     invoke 'django:migrate'
+  end
+
+  desc "Restart Celery"
+  task :restart_celery do
+    if fetch(:celery_name)
+      invoke 'django:restart_celeryd'
+      invoke 'django:restart_celerybeat'
+    end
+  end
+
+  desc "Restart Celeryd"
+  task :restart_celeryd do
+    on roles(:jobs) do
+      execute "sudo service celeryd-#{fetch(:celery_name)} restart"
+    end
+  end
+
+  desc "Restart Celerybeat"
+  task :restart_celerybeat do
+    on roles(:jobs) do
+      execute "sudo service celerybeat-#{fetch(:celery_name)} restart"
+    end
   end
 
   desc "Run django-compressor"
@@ -94,39 +118,18 @@ namespace :django do
       django("syncdb", "--noinput --migrate")
     end
   end
-
 end
 
+namespace :nodejs do
+  before 'deploy:restart', 'nodejs:grunt'
 
-
-#   namespace :nodejs do
-
-#     desc "Install node.js dependencies"
-#     task :install_deps do
-#       if exists?(:node_dependencies)
-#         run "cd #{current_release}/devops && npm install"
-#       end
-#     end
-
-#   namespace :python do
-
-#     desc "Restart Apache"
-#     task :restart_apache do
-#       run "sudo apache2ctl graceful"
-#     end
-
-#     desc "Restart Celery"
-#     task :restart_celery do
-#       restart_celeryd
-#       restart_celerybeat
-#     end
-
-#     desc "Restart Celeryd"
-#     task :restart_celeryd do
-#       run "sudo service celeryd-django restart"
-#     end
-
-#     desc "Restart Celerybeat"
-#     task :restart_celerybeat do
-#       run "sudo service celerybeat-django restart"
-#     end
+  desc "Run a grunt task"
+  task :grunt do
+    if fetch(:grunt_task)
+      on roles(:web) do
+        execute "cd #{release_path}; npm install"
+        execute "cd #{release_path}; ./node_modules/.bin/grunt #{fetch(:grunt_task)}"
+      end
+    end
+  end
+end
