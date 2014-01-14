@@ -127,7 +127,7 @@ namespace :nodejs do
   task :grunt do
     if fetch(:grunt_task)
       on roles(:web) do
-        execute "cd #{release_path}; npm install"
+        execute "cd #{release_path}; npm install --production"
         execute "cd #{release_path}; ./node_modules/.bin/grunt #{fetch(:grunt_task)}"
       end
     end
