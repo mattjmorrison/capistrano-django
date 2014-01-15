@@ -60,10 +60,18 @@ namespace :django do
     if fetch(:django_compressor)
       invoke 'django:compress'
     end
+    invoke 'django:compilemessages'
     invoke 'django:collectstatic'
     invoke 'django:symlink_settings'
     invoke 'django:symlink_wsgi'
     invoke 'django:migrate'
+  end
+
+  desc "Compile Messages"
+  task :compilemessages do
+    if fetch :compilemessages
+      django("compilemessages")
+    end
   end
 
   desc "Restart Celery"
