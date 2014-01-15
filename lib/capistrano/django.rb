@@ -20,6 +20,10 @@ namespace :python do
       execute "virtualenv #{virtualenv_path}"
       execute "#{virtualenv_path}/bin/pip install -r #{release_path}/#{fetch(:pip_requirements)}"
     end
+
+    if fetch(:grunt_task)
+      invoke 'nodejs:grunt'
+    end
     if fetch(:flask)
       invoke 'flask:setup'
     else
@@ -121,11 +125,9 @@ namespace :django do
 end
 
 namespace :nodejs do
-  before 'deploy:restart', 'nodejs:grunt'
 
   desc "Run a grunt task"
   task :grunt do
-    if fetch(:grunt_task)
       on roles(:web) do
         execute "cd #{release_path}; npm install --production"
         execute "cd #{release_path}; ./node_modules/.bin/grunt #{fetch(:grunt_task)}"
