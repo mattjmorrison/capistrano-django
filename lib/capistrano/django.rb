@@ -136,10 +136,9 @@ namespace :nodejs do
 
   desc "Run a grunt task"
   task :grunt do
-      on roles(:web) do
-        execute "cd #{release_path}; npm install --production"
-        execute "cd #{release_path}; ./node_modules/.bin/grunt #{fetch(:grunt_task)}"
-      end
+    on roles(:web) do
+      execute "cd #{release_path}; npm install --production"
+      execute "cd #{release_path}; ./node_modules/.bin/grunt #{fetch(:grunt_task)}"
     end
   end
 end
