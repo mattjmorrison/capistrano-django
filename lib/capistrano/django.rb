@@ -4,8 +4,22 @@ namespace :deploy do
 
   desc 'Restart application'
   task :restart do
+      if fetch(:nginx)
+        invoke 'deploy:nginx_restart'
+      else
+        execute "sudo apache2ctl graceful"
+      end
+  end
+
+  task :nginx_restart do
     on roles(:web) do |h|
-      execute "sudo apache2ctl graceful"
+      within release_path do
+        pid_file = "#{releases_path}/gunicorn.pid"
+        if test "[ -e #{pid_file} ]"
+          execute "kill `cat #{pid_file}`"
+        end
+        execute "virtualenv/bin/gunicorn", "#{fetch(:wsgi_file)}:application", '-c=gunicorn_config.py', "--pid=#{pid_file}"
+      end
     end
   end
 
@@ -63,7 +77,9 @@ namespace :django do
     invoke 'django:compilemessages'
     invoke 'django:collectstatic'
     invoke 'django:symlink_settings'
-    invoke 'django:symlink_wsgi'
+    if !fetch(:nginx)
+      invoke 'django:symlink_wsgi'
+    end
     invoke 'django:migrate'
   end
 
@@ -137,8 +153,10 @@ namespace :nodejs do
   desc "Run a grunt task"
   task :grunt do
     on roles(:web) do
-      execute "cd #{release_path}; npm install --production"
-      execute "cd #{release_path}; ./node_modules/.bin/grunt #{fetch(:grunt_task)}"
+      within release_path do
+        execute 'npm', 'install', '--production'
+        execute './node_modules/.bin/grunt', "#{fetch(:grunt_task)}"
+      end
     end
   end
 end
