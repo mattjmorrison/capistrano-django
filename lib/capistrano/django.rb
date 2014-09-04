@@ -4,11 +4,11 @@ namespace :deploy do
 
   desc 'Restart application'
   task :restart do
-      if fetch(:nginx)
-        invoke 'deploy:nginx_restart'
-      else
-        execute "sudo apache2ctl graceful"
-      end
+    if fetch(:nginx)
+      invoke 'deploy:nginx_restart'
+    else
+      execute "sudo apache2ctl graceful"
+    end
   end
 
   task :nginx_restart do
@@ -35,6 +35,9 @@ namespace :python do
       execute "#{virtualenv_path}/bin/pip install -r #{release_path}/#{fetch(:pip_requirements)}"
     end
 
+    if fetch(:npm_tasks)
+      invoke 'nodejs:npm'
+    end
     if fetch(:grunt_task)
       invoke 'nodejs:grunt'
     end
@@ -150,13 +153,35 @@ end
 
 namespace :nodejs do
 
-  desc "Run a grunt task"
-  task :grunt do
+  desc 'Install node modules'
+  task :npm_install do
     on roles(:web) do
       within release_path do
         execute 'npm', 'install', '--production'
+      end
+    end
+  end
+
+  desc "Run a grunt task"
+  task :grunt do
+    invoke 'nodejs:npm_install'
+    on roles(:web) do
+      within release_path do
         execute './node_modules/.bin/grunt', "#{fetch(:grunt_task)}"
       end
     end
   end
+
+  desc 'Run npm tasks'
+  task :npm do
+    invoke 'nodejs:npm_install'
+    on roles(:web) do
+      within release_path do
+        fetch(:npm_tasks).each do |task, args|
+          execute "./node_modules/.bin/#{task}", args
+        end
+      end
+    end
+  end
+
 end
