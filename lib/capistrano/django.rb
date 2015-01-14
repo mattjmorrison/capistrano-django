@@ -158,7 +158,7 @@ namespace :nodejs do
     on roles(:web) do
       path = fetch(:npm_path) ? File.join(release_path, fetch(:npm_path)) : release_path
       within path do
-        execute 'npm', 'install', '--production'
+        execute 'npm', 'install', fetch(:npm_install_production, '--production')
       end
     end
   end
