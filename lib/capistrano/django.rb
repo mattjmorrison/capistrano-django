@@ -7,7 +7,9 @@ namespace :deploy do
     if fetch(:nginx)
       invoke 'deploy:nginx_restart'
     else
-      execute "sudo apache2ctl graceful"
+      on roles(:web) do |h|
+        execute "sudo apache2ctl graceful"
+      end
     end
   end
 
@@ -122,7 +124,7 @@ namespace :django do
 
   desc "Run django's collectstatic"
   task :collectstatic do
-    django("collectstatic", "-i *.coffee -i *.less --noinput")
+    django("collectstatic", "-i *.coffee -i *.less -i node_modules/* -i bower_components/* --noinput")
   end
 
   desc "Symlink django settings to deployed.py"
