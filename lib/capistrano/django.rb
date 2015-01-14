@@ -156,7 +156,8 @@ namespace :nodejs do
   desc 'Install node modules'
   task :npm_install do
     on roles(:web) do
-      within release_path do
+      path = fetch(:npm_path) ? File.join(release_path, fetch(:npm_path)) : release_path
+      within path do
         execute 'npm', 'install', '--production'
       end
     end
@@ -166,7 +167,8 @@ namespace :nodejs do
   task :grunt do
     invoke 'nodejs:npm_install'
     on roles(:web) do
-      within release_path do
+      path = fetch(:npm_path) ? File.join(release_path, fetch(:npm_path)) : release_path
+      within path do
         execute './node_modules/.bin/grunt', "#{fetch(:grunt_task)}"
       end
     end
@@ -176,7 +178,8 @@ namespace :nodejs do
   task :npm do
     invoke 'nodejs:npm_install'
     on roles(:web) do
-      within release_path do
+      path = fetch(:npm_path) ? File.join(release_path, fetch(:npm_path)) : release_path
+      within path do
         fetch(:npm_tasks).each do |task, args|
           execute "./node_modules/.bin/#{task}", args
         end
