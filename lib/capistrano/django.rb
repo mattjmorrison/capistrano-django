@@ -40,9 +40,6 @@ namespace :python do
     if fetch(:npm_tasks)
       invoke 'nodejs:npm'
     end
-    if fetch(:grunt_task)
-      invoke 'nodejs:grunt'
-    end
     if fetch(:flask)
       invoke 'flask:setup'
     else
@@ -148,7 +145,7 @@ namespace :django do
     if fetch(:multidb)
       django("sync_all", '--noinput', run_on=:web)
     else
-      django("syncdb", "--noinput --migrate", run_on=:web)
+      django("migrate", "--noinput", run_on=:web)
     end
   end
 end
@@ -161,17 +158,6 @@ namespace :nodejs do
       path = fetch(:npm_path) ? File.join(release_path, fetch(:npm_path)) : release_path
       within path do
         execute 'npm', 'install', fetch(:npm_install_production, '--production')
-      end
-    end
-  end
-
-  desc "Run a grunt task"
-  task :grunt do
-    invoke 'nodejs:npm_install'
-    on roles(:web) do
-      path = fetch(:npm_path) ? File.join(release_path, fetch(:npm_path)) : release_path
-      within path do
-        execute './node_modules/.bin/grunt', "#{fetch(:grunt_task)}"
       end
     end
   end
