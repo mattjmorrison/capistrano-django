@@ -20,4 +20,4 @@ set :django_settings, 'production'
 role :web, "user@127.0.0.1"
 ```
 
-**Author:** Matthew J. Morrison.  [Follow me on Twitter][twitter]
+**Author:** Matthew J. Morrison.  [Follow me on Twitter](https://twitter.com/mattjmorrison)
