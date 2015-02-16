@@ -145,7 +145,7 @@ namespace :django do
     if fetch(:multidb)
       django("sync_all", '--noinput', run_on=:web)
     else
-      django("syncdb", "--noinput --migrate", run_on=:web)
+      django("migrate", "--noinput", run_on=:web)
     end
   end
 end
