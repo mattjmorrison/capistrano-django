@@ -20,4 +20,14 @@ set :django_settings, 'production'
 role :web, "user@127.0.0.1"
 ```
 
+Ordinarily, capistrano-django builds a separate virtualenv per-deploy.
+
+If you include:
+``` ruby
+set :shared_virtualenv, true
+```
+in your configuration file, it will instead create a virtualenv in the `shared_path`, and
+symlink it into the release path.  It will build it via requirements only when they differ
+from those of the last release.
+
 **Author:** Matthew J. Morrison.  [Follow me on Twitter](https://twitter.com/mattjmorrison)

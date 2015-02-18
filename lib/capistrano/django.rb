@@ -1,4 +1,4 @@
-after 'deploy:updating', 'python:create_virtualenv'
+after 'deploy:updating', 'python:create_or_update_virtualenv'
 
 namespace :deploy do
 
@@ -28,11 +28,74 @@ namespace :deploy do
 end
 
 namespace :python do
+  # Helper functions for handling shared virtualenv
+  def quiet
+    old_output = SSHKit.config.output
+    SSHKit.config.output = File.open("/dev/null", "w")
+    value = yield
+    SSHKit.config.output = old_output
+    value
+  end
+
+  def check_venv
+    puts "Checking virtualenv..."
+
+    retval = false
+
+    on roles(:all) do |h|
+      retval = if test("[ -d #{virtualenv_path} ]")
+                 installed = capture("#{virtualenv_path}/bin/pip freeze")
+                 required = capture(:cat, "#{release_path}/#{fetch(:pip_requirements)}")
+                 installed == required
+               else
+                 false
+               end
+    end
+    retval
+  end
+
+  def virtualenv_path
+    File.join(
+      fetch(:shared_virtualenv) ? shared_path : release_path, "virtualenv"
+    )
+  end
+
+  desc "Check if shared virtualenv meets requirements"
+  task :check_shared_virtualenv do
+    puts check_venv ? "Existing good virtualenv." : "Outdated or missing virtualenv."
+  end
+
+  desc "Create or update shared virtualenv if necessary"
+  task :create_or_update_virtualenv do
+    on roles(:all) do |h|
+      if fetch(:shared_virtualenv)
+        unless check_venv
+          execute "virtualenv --clear #{virtualenv_path}"
+          execute "#{virtualenv_path}/bin/pip install -r #{release_path}/#{fetch(:pip_requirements)}"
+          invoke "python:symlink_shared_virtualenv"
+          if fetch(:npm_tasks)
+            invoke 'nodejs:npm'
+          end
+          if fetch(:flask)
+            invoke 'flask:setup'
+          else
+            invoke 'django:setup'
+          end
+        end
+      else
+        invoke 'python:create_virtualenv'
+      end
+    end
+  end
+
+  desc "Symlink shared virtualenv to release"
+  task :symlink_shared_virtualenv do
+    execute :ln, "-s", virtualenv_path, File.join(release_path, 'virtualenv')
+  end
 
   desc "Create a python virtualenv"
   task :create_virtualenv do
     on roles(:all) do |h|
-      virtualenv_path = File.join(release_path, 'virtualenv')
       execute "virtualenv #{virtualenv_path}"
       execute "#{virtualenv_path}/bin/pip install -r #{release_path}/#{fetch(:pip_requirements)}"
     end
