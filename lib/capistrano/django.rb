@@ -29,12 +29,20 @@ end
 
 namespace :python do
 
+  def virtualenv_path
+    File.join(
+      fetch(:shared_virtualenv) ? shared_path : release_path, "virtualenv"
+    )
+  end
+
   desc "Create a python virtualenv"
   task :create_virtualenv do
     on roles(:all) do |h|
-      virtualenv_path = File.join(release_path, 'virtualenv')
       execute "virtualenv #{virtualenv_path}"
       execute "#{virtualenv_path}/bin/pip install -r #{release_path}/#{fetch(:pip_requirements)}"
+      if fetch(:shared_virtualenv)
+        execute :ln, "-s", virtualenv_path, File.join(release_path, 'virtualenv')
+      end
     end
 
     if fetch(:npm_tasks)
