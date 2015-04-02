@@ -106,6 +106,9 @@ namespace :django do
       invoke 'django:restart_celeryd'
       invoke 'django:restart_celerybeat'
     end
+    if fetch(:celery_names)
+      invoke 'django:restart_named_celery_processes'
+    end
   end
 
   desc "Restart Celeryd"
@@ -119,6 +122,18 @@ namespace :django do
   task :restart_celerybeat do
     on roles(:jobs) do
       execute "sudo service celerybeat-#{fetch(:celery_name)} restart"
+    end
+  end
+
+  desc "Restart named celery processes"
+  task :restart_named_celery_processes do
+    on roles(:jobs) do
+      fetch(:celery_names).each { | celery_name, celery_beat |
+        execute "sudo service celeryd-#{celery_name} restart"
+        if celery_beat
+          execute "sudo service celerybeat-#{celery_name} restart"
+        end
+      }
     end
   end
 
