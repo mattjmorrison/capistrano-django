@@ -160,7 +160,7 @@ namespace :django do
     on roles(:web) do
       wsgi_path = File.join(release_path, fetch(:wsgi_path, 'wsgi'))
       wsgi_file_name = fetch(:wsgi_file_name, 'main.wsgi')
-      execute "ln -sf #{wsgi_path}/#{wsgi_file_name} #{wsgi_path}/live.wsgi"
+      execute "ln -sf #{wsgi_path}/#{wsgi_file_name} wsgi/live.wsgi"
     end
   end
 
