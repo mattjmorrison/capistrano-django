@@ -144,7 +144,7 @@ namespace :django do
 
   desc "Run django's collectstatic"
   task :collectstatic do
-    django("collectstatic", "-i *.coffee -i *.less -i node_modules/* -i bower_components/* --noinput")
+    django("collectstatic", "-i *.coffee -i *.less -i node_modules/* -i bower_components/* --noinput --clear")
   end
 
   desc "Symlink django settings to deployed.py"
