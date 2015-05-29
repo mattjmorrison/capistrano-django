@@ -1,0 +1,32 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  # TODO put box url in here
+  config.vm.box = "ubuntu-14.04"
+
+  config.vm.define :web do |web|
+    web.vm.network "forwarded_port", guest: 80, host: 8080
+    web.vm.provision "shell", inline: <<-SCRIPT
+    sudo apt-get update -y
+    sudo apt-get upgrade -y
+    sudo apt-get install -y git build-essential python python-virtualenv apache2 libapache2-mod-wsgi
+    sudo mkdir -p /var/www/shared /var/www/releases
+    mkdir -p /home/vagrant/static
+    sudo chown -R vagrant:www-data /home/vagrant
+    sudo chown -R vagrant:www-data /var/www
+    sudo echo 'WSGIPythonHome /var/www/current/virtualenv' > /etc/apache2/sites-available/test-deploy.conf
+    sudo echo 'WSGIApplicationGroup %{GLOBAL}' >> /etc/apache2/sites-available/test-deploy.conf
+    sudo echo '<VirtualHost *:80>' >> /etc/apache2/sites-available/test-deploy.conf
+    sudo echo '  WSGIScriptAlias / /var/www/current/test_deploy/live.wsgi' >> /etc/apache2/sites-available/test-deploy.conf
+    sudo echo '  WSGIProcessGroup test' >> /etc/apache2/sites-available/test-deploy.conf
+    sudo echo '  WSGIDaemonProcess test processes=3 threads=3 display-name=test python-path=/var/www/current/virtualenv/lib/python2.7/site-packages:/var/www/current' >> /etc/apache2/sites-available/test-deploy.conf
+    sudo echo '</VirtualHost>' >> /etc/apache2/sites-available/test-deploy.conf
+    sudo a2dissite 000-default
+    sudo a2ensite test-deploy.conf
+    sudo apache2ctl restart
+    SCRIPT
+  end
+end

@@ -144,6 +144,10 @@ namespace :django do
 
   desc "Run django's collectstatic"
   task :collectstatic do
+    if fetch(:create_s3_bucket)
+      invoke 's3:create_bucket'
+    end
+
     django("collectstatic", "-i *.coffee -i *.less -i node_modules/* -i bower_components/* --noinput --clear")
   end
 
@@ -197,6 +201,80 @@ namespace :nodejs do
         end
       end
     end
+  end
+
+end
+
+
+before 'deploy:cleanup', 's3:cleanup'
+
+namespace :s3 do
+
+  desc 'Clean up old s3 buckets'
+  task :cleanup do
+    if fetch(:create_s3_bucket)
+      on roles(:web) do
+        releases = capture(:ls, '-xtr', releases_path).split
+        if releases.count >= fetch(:keep_releases)
+          directories = releases.last(fetch(:keep_releases))
+          require 'fog'
+          storage = Fog::Storage.new({
+            aws_access_key_id: fetch(:aws_access_key),
+            aws_secret_access_key: fetch(:aws_secret_key),
+            provider: "AWS"
+          })
+          buckets = storage.directories.all.select { |b| b.key.start_with? fetch(:s3_bucket_prefix) }
+          buckets = buckets.select { |b| not directories.include?(b.key.split('-').last) }
+          buckets.each do |old_bucket|
+            files = old_bucket.files.map{ |file| file.key }
+            storage.delete_multiple_objects(old_bucket.key, files) unless files.empty?
+            storage.delete_bucket(old_bucket.key)
+          end
+        end
+      end
+    end
+  end
+
+  desc 'Create a new bucket in s3 to deploy static files to'
+  task :create_bucket do
+    settings_path = File.join(release_path, fetch(:django_settings_dir))
+    s3_settings_path = File.join(settings_path, 's3_settings.py')
+    bucket_name = "#{fetch(:s3_bucket_prefix)}-#{asset_timestamp.sub('.', '')}"
+
+    on roles(:web) do
+      execute %Q|echo "STATIC_URL = 'https://s3.amazonaws.com/#{bucket_name}/'" > #{s3_settings_path}|
+      execute %Q|echo "AWS_ACCESS_KEY_ID = '#{fetch(:aws_access_key)}'" >> #{s3_settings_path}|
+      execute %Q|echo "AWS_SECRET_ACCESS_KEY = '#{fetch(:aws_secret_key)}'" >> #{s3_settings_path}|
+      execute %Q|echo "AWS_STORAGE_BUCKET_NAME = '#{bucket_name}'" >> #{s3_settings_path}|
+      execute %Q|echo 'from .s3_settings import *' >> #{settings_path}/#{fetch(:django_settings)}.py|
+      execute %Q|echo 'STATICFILES_STORAGE = "storages.backends.s3boto.S3BotoStorage"' >> #{settings_path}/#{fetch(:django_settings)}.py|
+    end
+
+    require 'fog'
+    storage = Fog::Storage.new({
+      aws_access_key_id: fetch(:aws_access_key),
+      aws_secret_access_key: fetch(:aws_secret_key),
+      provider: "AWS"
+    })
+    storage.put_bucket(bucket_name)
+    storage.put_bucket_policy(bucket_name, {
+      'Statement' => [{
+      'Sid' => 'AddPerm',
+      'Effect' => 'Allow',
+      'Principal' => '*',
+      'Action' => ['s3:GetObject'],
+      'Resource' => ["arn:aws:s3:::#{bucket_name}/*"]
+      }]
+    })
+    storage.put_bucket_cors(bucket_name, {
+      "CORSConfiguration" => [{
+        "AllowedOrigin" => ["*"],
+        "AllowedHeader" => ["*"],
+        "AllowedMethod" => ["GET"],
+        "MaxAgeSeconds" => 3000
+      }]
+    })
+
   end
 
 end
