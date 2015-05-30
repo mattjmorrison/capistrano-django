@@ -241,7 +241,7 @@ namespace :s3 do
     s3_settings_path = File.join(settings_path, 's3_settings.py')
     bucket_name = "#{fetch(:s3_bucket_prefix)}-#{asset_timestamp.sub('.', '')}"
 
-    on roles(:web) do
+    on roles(:all) do
       execute %Q|echo "STATIC_URL = 'https://s3.amazonaws.com/#{bucket_name}/'" > #{s3_settings_path}|
       execute %Q|echo "AWS_ACCESS_KEY_ID = '#{fetch(:aws_access_key)}'" >> #{s3_settings_path}|
       execute %Q|echo "AWS_SECRET_ACCESS_KEY = '#{fetch(:aws_secret_key)}'" >> #{s3_settings_path}|
