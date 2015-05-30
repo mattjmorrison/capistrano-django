@@ -146,9 +146,13 @@ namespace :django do
   task :collectstatic do
     if fetch(:create_s3_bucket)
       invoke 's3:create_bucket'
+      on roles(:web) do
+        django("collectstatic", "-i *.coffee -i *.less -i node_modules/* -i bower_components/* --noinput --clear")
+      end
+    else
+      django("collectstatic", "-i *.coffee -i *.less -i node_modules/* -i bower_components/* --noinput --clear")
     end
 
-    django("collectstatic", "-i *.coffee -i *.less -i node_modules/* -i bower_components/* --noinput --clear")
   end
 
   desc "Symlink django settings to deployed.py"
