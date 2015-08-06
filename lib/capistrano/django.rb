@@ -150,7 +150,7 @@ namespace :django do
         django("collectstatic", "-i *.coffee -i *.less -i node_modules/* -i bower_components/* --noinput --clear")
       end
     else
-      django("collectstatic", "-i *.coffee -i *.less -i node_modules/* -i bower_components/* --noinput --clear")
+      django("collectstatic", "-i *.coffee -i *.less -i node_modules/* -i bower_components/* --noinput")
     end
 
   end
