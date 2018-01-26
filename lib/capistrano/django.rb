@@ -1,4 +1,5 @@
 after 'deploy:updating', 'python:create_virtualenv'
+after 'python:create_virtualenv', 'python:post_virtualenv'
 
 namespace :deploy do
 
@@ -44,7 +45,10 @@ namespace :python do
         execute :ln, "-s", virtualenv_path, File.join(release_path, 'virtualenv')
       end
     end
+  end
 
+  desc "Set things up after the virtualenv is ready"
+  task :post_virtualenv do
     if fetch(:npm_tasks)
       invoke 'nodejs:npm'
     end
