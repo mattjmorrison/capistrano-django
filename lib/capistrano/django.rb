@@ -1,5 +1,4 @@
 after 'deploy:updating', 'python:create_virtualenv'
-after 'python:create_virtualenv', 'python:post_virtualenv'
 
 namespace :deploy do
 
@@ -60,6 +59,8 @@ namespace :python do
   end
 
 end
+
+after 'python:create_virtualenv', 'python:post_virtualenv'
 
 namespace :flask do
 
