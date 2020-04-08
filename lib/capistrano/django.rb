@@ -222,24 +222,26 @@ namespace :s3 do
   desc 'Clean up old s3 buckets'
   task :cleanup do
     if fetch(:create_s3_bucket)
+      raw_directories = []
       on roles(:web) do
         releases = capture(:ls, '-xtr', releases_path).split
         if releases.count >= fetch(:keep_releases)
-          directories = releases.last(fetch(:keep_releases))
-          require 'fog'
-          storage = Fog::Storage.new({
-            aws_access_key_id: fetch(:aws_access_key),
-            aws_secret_access_key: fetch(:aws_secret_key),
-            provider: "AWS"
-          })
-          buckets = storage.directories.all.select { |b| b.key.start_with? fetch(:s3_bucket_prefix) }
-          buckets = buckets.select { |b| not directories.include?(b.key.split('-').last) }
-          buckets.each do |old_bucket|
-            files = old_bucket.files.map{ |file| file.key }
-            storage.delete_multiple_objects(old_bucket.key, files) unless files.empty?
-            storage.delete_bucket(old_bucket.key)
-          end
+          raw_directories.concat releases.last(fetch(:keep_releases))
         end
+      end
+      directories = raw_directories.uniq
+      require 'fog'
+      storage = Fog::Storage.new({
+        aws_access_key_id: fetch(:aws_access_key),
+        aws_secret_access_key: fetch(:aws_secret_key),
+        provider: "AWS"
+      })
+      buckets = storage.directories.all.select { |b| b.key.start_with? fetch(:s3_bucket_prefix) }
+      buckets = buckets.select { |b| not directories.include?(b.key.split('-').last) }
+      buckets.each do |old_bucket|
+        files = old_bucket.files.map{ |file| file.key }
+        storage.delete_multiple_objects(old_bucket.key, files) unless files.empty?
+        storage.delete_bucket(old_bucket.key)
       end
     end
   end
