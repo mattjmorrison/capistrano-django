@@ -221,7 +221,7 @@ namespace :s3 do
 
   desc 'Clean up old s3 buckets'
   task :cleanup do
-    if fetch(:create_s3_bucket) and fetch(:delete_old_s3_buckets)
+    if fetch(:create_s3_bucket) and fetch(:delete_old_s3_buckets, true)
       raw_directories = []
       on roles(:web) do
         releases = capture(:ls, '-xtr', releases_path).split
