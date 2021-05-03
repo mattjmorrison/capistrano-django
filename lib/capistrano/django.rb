@@ -180,9 +180,9 @@ namespace :django do
   desc "Run django migrations"
   task :migrate do
     if fetch(:multidb)
-      django("sync_all", '--noinput', run_on=:web)
+      django("sync_all", '--noinput', run_on=:jobs)
     else
-      django("migrate", "--noinput", run_on=:web)
+      django("migrate", "--noinput", run_on=:jobs)
     end
   end
 end
