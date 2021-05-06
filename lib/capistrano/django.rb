@@ -227,6 +227,8 @@ namespace :s3 do
         releases = capture(:ls, '-xtr', releases_path).split
         if releases.count >= fetch(:keep_releases)
           raw_directories.concat releases.last(fetch(:keep_releases))
+        else
+          raw_directories.concat releases
         end
       end
       directories = raw_directories.uniq
