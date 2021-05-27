@@ -39,6 +39,7 @@ namespace :python do
   task :create_virtualenv do
     on roles(:all) do |h|
       execute "virtualenv #{virtualenv_path}"
+      execute "#{virtualenv_path}/bin/pip install pip<19.2"
       execute "#{virtualenv_path}/bin/pip install -r #{release_path}/#{fetch(:pip_requirements)}"
       if fetch(:shared_virtualenv)
         execute :ln, "-s", virtualenv_path, File.join(release_path, 'virtualenv')

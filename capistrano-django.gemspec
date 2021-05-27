@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
 
   s.name     = "capistrano-django"
-  s.version  = "4.0.1"
+  s.version  = "4.0.3"
 
   s.homepage = "http://github.com/mattjmorrison/capistrano-django"
   s.summary  = %q{capistrano-django - Welcome to easy deployment with Ruby over SSH for Django}
