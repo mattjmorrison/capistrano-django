@@ -1,3 +1,5 @@
+Warning: This is no longer under active development. PRs will still be accepted.
+
 # Capistrano Django
 
 **A set of tasks built ontop of Capistrano to assist with Django deployments**
