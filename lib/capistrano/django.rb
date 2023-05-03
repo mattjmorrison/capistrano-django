@@ -264,31 +264,54 @@ namespace :s3 do
       execute %Q|echo 'STATICFILES_STORAGE = "storages.backends.s3boto.S3BotoStorage"' >> #{settings_path}/#{fetch(:django_settings)}.py|
     end
 
-    require 'fog'
-    storage = Fog::Storage.new({
-      aws_access_key_id: fetch(:aws_access_key),
-      aws_secret_access_key: fetch(:aws_secret_key),
-      provider: "AWS"
-    })
-    storage.put_bucket(bucket_name)
-    storage.put_bucket_policy(bucket_name, {
-      'Statement' => [{
-      'Sid' => 'AddPerm',
-      'Effect' => 'Allow',
-      'Principal' => '*',
-      'Action' => ['s3:GetObject'],
-      'Resource' => ["arn:aws:s3:::#{bucket_name}/*"]
-      }]
-    })
-    storage.put_bucket_cors(bucket_name, {
-      "CORSConfiguration" => [{
-        "AllowedOrigin" => ["*"],
-        "AllowedHeader" => ["*"],
-        "AllowedMethod" => ["GET"],
-        "MaxAgeSeconds" => 3000
-      }]
+    require 'aws-sdk-s3'
+    require 'aws-sdk-core'
+    require 'json'
+
+    s3 = Aws::S3::Client.new :credentials => Aws::Credentials.new(fetch(:aws_access_key), fetch(:aws_secret_key))
+    s3.create_bucket({:bucket => bucket_name})
+    s3.put_bucket_ownership_controls({
+      :bucket => bucket_name,
+      :ownership_controls => {
+        :rules => [{
+          :object_ownership => :BucketOwnerPreferred
+        }]
+      }
     })
 
+    s3.put_public_access_block({
+      :bucket => bucket_name,
+      :public_access_block_configuration => {
+        :ignore_public_acls => false,
+        :block_public_acls => false,
+        :block_public_policy => false,
+        :restrict_public_buckets => false
+      }
+    })
+
+    s3.put_bucket_policy({
+      :bucket => bucket_name,
+      :policy => {
+        :Statement => [{
+          :Effect => "Allow",
+          :Action => ["s3:GetObject"],
+          :Principal => "*",
+          :Resource => ["arn:aws:s3:::#{bucket_name}/*"
+        ]}
+      ]}.to_json
+    })
+
+    s3.put_bucket_cors({
+      :bucket => bucket_name,
+      :cors_configuration => {
+        :cors_rules => [{
+          :allowed_origins => ['*'],
+          :allowed_methods => ['GET'],
+          :allowed_headers => ['*'],
+          :max_age_seconds => 3000
+        }]
+      }
+    })
   end
 
 end
